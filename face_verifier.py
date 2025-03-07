@@ -2,7 +2,6 @@ import cv2
 import face_recognition
 import numpy as np
 import os
-from geopy.geocoders import Nominatim
 import requests
 import time
 import threading
@@ -20,11 +19,8 @@ def set_authorized_encodings(file_path):
     for file in os.listdir(file_path):
         image = face_recognition.load_image_file(os.path.join(file_path, file))
         encoding = face_recognition.face_encodings(image)
-        # Grab only the first encoding
         if encoding:
             authorized_encodings.append(encoding[0])
-    
-    print(len(authorized_encodings))
     return authorized_encodings
 
 # Sets authorized locations (manually fed for now)
@@ -36,7 +32,6 @@ def set_authorized_locations(coords):
 
 # Gets the current location of the user through ip request and location request
 def get_current_location():
-    # geolocator = Nominatim(user_agent='geolocator_app')
     ip_request = requests.get("https://api64.ipify.org?format=json")
     ip_address = ip_request.json()['ip']
 
@@ -44,6 +39,7 @@ def get_current_location():
     location_data = location_request.json()
 
     lat, lon = location_data['loc'].split(',')
+    print(float(lat), float(lon))
     return (float(lat), float(lon))
 
 # Updates location every 3 minutes when program is running in a seperate thread
@@ -53,12 +49,10 @@ def update_location_periodically(location, stop_event):
         print('getting new location')
         if new_location:
             location[0] = new_location
-        time.sleep(10)
+        time.sleep(180)
 
 # Checks if the user is in an authorized location
 def check_in_authorized_locations(current_location, authorized_locations):
-    print(current_location)
-    print(authorized_locations)
     return current_location not in authorized_locations
 
 # Resizes the facial capture frame
@@ -103,7 +97,10 @@ def run_face_recognition(authorized_locations, authorized_encodings, location):
             cv2.putText(frame, name, (left, top - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.75, color, 2)
         
         current_location = location[0]
-        if unauthorized_present or check_in_authorized_locations(current_location, authorized_locations):
+        if not unauthorized_present and check_in_authorized_locations(current_location, authorized_locations):
+            cv2.putText(frame, 'Authorized Person in Unauthorized Location', (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 0), 2)
+        
+        elif unauthorized_present or check_in_authorized_locations(current_location, authorized_locations):
             timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
             filename = f'img_{timestamp}.png'
 
@@ -119,9 +116,6 @@ def run_face_recognition(authorized_locations, authorized_encodings, location):
                 video_capture.release()
                 cv2.destroyAllWindows()
                 sys.exit(0)
-
-        elif not unauthorized_present and check_in_authorized_locations(current_location, authorized_locations):
-            cv2.putText(frame, 'Authorized Person in Unauthorized Location', (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 255, 0), 2)
             
         else:
             cv2.putText(frame, 'Authorized Person and Location Detected', (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
@@ -137,7 +131,8 @@ def run_face_recognition(authorized_locations, authorized_encodings, location):
 # Main loop
 def main():
     # Home (35.2635, -120.6509)
-    # The Avenue (35.2635, -120.6509)
+    # Cal Poly Campus (35.2635, -120.6509)
+    
     authorized_locations = set_authorized_locations([(35.2635, -120.6509), (35.2828, -120.6596)])
     authorized_encodings = set_authorized_encodings("authorized_faces/")
     current_location = get_current_location()
