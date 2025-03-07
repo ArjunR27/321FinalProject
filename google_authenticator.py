@@ -3,6 +3,7 @@ import qrcode
 import os
 from dotenv import load_dotenv
 
+# Generates the qr code for google authenticator 
 def generate_qr_code(key):
     uri = pyotp.totp.TOTP(key).provisioning_uri(name='Arjun Ranade',
                                                 issuer_name='DeviceSecurity App')
@@ -12,6 +13,7 @@ def generate_qr_code(key):
     img = qr.make_image(fill='black', back_color='white')
     img.save('totp.png')
 
+# Saves the secret to the .env file (secret is randomly generated)
 def generate_and_save_secret():
     if not os.path.exists('.env'):
         secret = pyotp.random_base32()
@@ -23,18 +25,18 @@ def generate_and_save_secret():
     else:
         print("Secret key already exists. Not generating a new one.")
 
+# Verifies if the key entered by the user is the same as google authenticator
 def verify(encoded_secret):
     totp = pyotp.TOTP(encoded_secret)
-    while True: 
-        print(totp.verify(input(("Enter the Code : "))))
+    return totp.verify(input(('Enter the Code: ')))
 
+# Main loop
 def main():
     load_dotenv()
     generate_and_save_secret()
     secret = os.getenv('AUTHENTICATOR_SECRET')
 
     if not secret:
-        print("Error: Secret key not found. Check your .env file.")
         return
     verify(secret)
 
