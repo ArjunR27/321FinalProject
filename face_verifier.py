@@ -133,7 +133,7 @@ def main():
     # Home (35.2635, -120.6509)
     # Cal Poly Campus (35.2635, -120.6509)
     
-    authorized_locations = set_authorized_locations([(35.2635, -120.6509), (35.2828, -120.6596)])
+    authorized_locations = set_authorized_locations([(35.2935, -120.1509)])
     authorized_encodings = set_authorized_encodings("authorized_faces/")
     current_location = get_current_location()
     location = [current_location]
